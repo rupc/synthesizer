@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset = "utf-8" />
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+
+	<title>Instrument Controller</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="http://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+		
+
+    <script type="text/javascript">
+      var socket = io.connect("http://169.254.59.33:7000");
+      var pinval = true;
+      var tempo = 200;
+      socket.on('date', function(data){
+        $('#date').text(data.date);
+      });
+      var play_timer
+      var play_flg = false;
+      var cur_col = 0;
+      var col_siz = 16;
+      var row_siz = 5;
+      var is_old_timer = false;
+
+      var drum_line_val;
+      var drum_timbre_val;
+// now calls every five seconds
+	  $(document).ready(function() {
+	    $('#text').keypress(function(e){
+	    	socket.emit('client_data', {'letter': String.fromCharCode(e.charCode)});
+	    	// socket.send(pinVal);
+	    	// pinVal = ~pinVal;
+			});
+      $("#play_button").click(function() {
+        socket.emit("music_value_change", {name : "play_note", value : true});
+        if(is_old_timer == true) {
+          clearInterval(play_timer);
+          is_old_timer = false;
+        } 
+        play_timer = setInterval(update_tempo_effect, tempo);
+        is_old_timer = true;
+        play_flg = true;        
+      });
+      $("#stop_button").click(function() {
+        socket.emit("music_value_change", {name : "play_note", value : false});
+        clearInterval(play_timer);
+        is_old_timer = false;
+        play_flg = false;
+      });
+
+      $("#note_off_button").click(function() {
+        socket.emit("music_value_change", {name : "all_note_off", value : true});
+        for(isOn in circles_toggles) {
+          if(circles_toggles[isOn]) {
+            circles_toggles[isOn] = false;
+            draw_normal_circle(ctx, note_circles[isOn]);
+          }
+        }
+      });
+	  });
+    var end_flg = false;
+    function update_tempo_effect() {
+      var cc, cp;
+
+      cc = note_circles[cur_col];
+      socket.emit("music_value_change", {name : "cur_seq", value : cur_col});
+      // document.getElementById("note_num_indicator").innerHTML = (cur_col + 1 == 17) ? 1 : cur_col + 1;
+      // $("#note_num_indicator_").text(cur_col);
+      if(cur_col >= 0 && cur_col < 16) { // erase just before current position.
+        if(cur_col > 0) {
+          cp = note_circles[cur_col - 1];
+          pctx.beginPath();
+          pctx.fillStyle = "violet";
+          pctx.fillRect(cp.left - 3, cp.top - 10, 35, canvas_height);
+        }
+
+        pctx.beginPath();
+        pctx.fillStyle = "yellow";
+        pctx.fillRect(cc.left - 3,cc.top - 10, 35,canvas_height);
+      }
+
+      if(cur_col == 16) {
+        cp = note_circles[cur_col - 1];
+        pctx.beginPath();
+        pctx.fillStyle = "violet";
+        pctx.fillRect(cp.left - 3, cp.top - 10, 35, canvas_height);
+        cur_col = 0;
+
+        cc = note_circles[0];
+        pctx.beginPath();
+        pctx.fillStyle = "yellow";
+        pctx.fillRect(cc.left - 3, cc.top - 10, 35, canvas_height);        
+      }
+
+      ++cur_col;
+    }
+    function showVal(name, value){
+      document.getElementById(name).innerHTML=value;
+      sendMusicVal(name, value);
+
+	  }
+
+	  var timbreArray = ["Acoustic Grand Piano",
+		"Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano", "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba", "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ", "Reed Organ", "Accordion", "Harmonica", "Tango Accordion", "Acoustic Guitar nylon", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)", "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar harmonics", "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass", "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2", "Violin", "Viola", "Cello", "Contrabass", "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "String Ensemble 1", "String Ensemble 2", "Synth Strings 1", "Synth Strings 2", "Choir Aahs", "Voice Oohs", "Synth Voice", "Orchestra Hit", "Trumpet", "Trombone", "Tuba", "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2", "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn", "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina", "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)", "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)", "89 Pad 1 (new age)", "90 Pad 2 (warm)", "91 Pad 3 (polysynth)", "92 Pad 4 (choir)", "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)", "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)", "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba", "Bag pipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock", "Taiko Drum", "Melodic Tom", "Synth Drum", "Sound effects:", "Reverse Cymbal", "Guitar Fret Noise", "Breath Noise", "Seashore", "Bird Tweet", "Telephone Ring", "Helicopter", "Applause", "Gunshot"];
+    var drumArray = ["Acoustic Bass Drum","Bass Drum ","Side Stick","Acoustic Snare","Hand Clap","Electric Snare","Low Floor Tom","Closed High Hat","High Floor Tom","Pedal High Hat","Low Tom","Open High Hat","Low Mid Tom","High Mid Tom","Crash Cymbal ","High Tom","Ride Cymbal ","Chinese Cymbal","Ride Bell","Tambourine","Splash Cymbal","Cowbell","Crash Cymbal ","Vibraslap","Ride Cymbal ","High Bongo","Low Bongo","Mute High Conga","Open High Conga","Low Conga","High Timbale","Low Timbale","High Agogo","Low Agogo","Cabasa","Maracas","Short Whistle","Long Whistle","Short Guiro","Long Guiro","Claves","High Wood Block","Low Wood Block","Mute Cuica","Open Cuica","Mute Triangle","Open Triangle"];
+
+  function note_to_its_name(note) {
+    var pit_name = "";
+    switch (note % 12) {
+      case 0:
+      pit_name = "C";
+      break;
+      case 1:
+      pit_name = "CS";
+      break;
+      case 2:
+      pit_name = "D";
+      break;
+      case 3:
+      pit_name = "DS";
+      break;
+      case 4:
+      pit_name = "E";
+      break;
+      case 5:
+      pit_name = "F";
+      break;
+      case 6:
+      pit_name = "FS";
+      break;
+      case 7:
+      pit_name = "G";
+      break;
+      case 8:
+      pit_name = "GS";
+      break;
+      case 9:
+      pit_name = "A";
+      break;
+      case 10:
+      pit_name = "AS";
+      break;
+      case 11:
+      pit_name = "B";
+      break;
+    }
+    pit_name += Math.trunc(note / 12);
+    return pit_name;
+}
+var drum_machine_info = [
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+];
+	  $(function() {
+            $( "#mdrumline" ).slider({
+		           min:1,
+		           max:5,
+               value: 1,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#drumlineValue" )
+                     .val(ui.value )
+                     .css("color", "#0040FF");
+               },
+               stop:function(event, ui) {
+               		$( "#drumlineValue" ).css("color", "#FF0040");
+	                socket.emit("music_value_change", {name : "drumline", value : ui.value});
+                  drum_line_val = ui.value;
+                  
+               }
+            });
+            $( "#mvolume" ).slider({
+		           min:1,
+		           max:127,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#volumeValue" )
+                     .val(ui.value )
+                     .css("color", "blue");
+			               // socket.emit("music_value_change", {name : "volume", value : ui.value});
+               },
+               stop: function(event, ui) {
+                  $( "#volumeValue" ).css("color", "#FF0040");
+                     socket.emit("music_value_change", {name : "volume", value : ui.value});
+               }
+               
+            });
+            $( "#mtimbre" ).slider({
+               min:1,
+               max:127,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#timbreValue" )
+                     .val(ui.value + "(" + timbreArray[ui.value] + ")")
+                     .css("color", "#0040FF");
+               },
+               stop: function(event, ui) {
+                  $( "#timbreValue" ).css("color", "#FF0040");
+                     socket.emit("music_value_change", {name : "timbre", value : ui.value});
+               }
+            });
+            $( "#mdrumtimbre" ).slider({
+		           min:35,
+		           max:81,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#drumtimbreValue" )
+                     .val(ui.value + "(" + drumArray[ui.value-35] + ")")
+                  	 .css("color", "#0040FF");
+               },
+               stop: function(event, ui) {
+                  $( "#drumtimbreValue" ).css("color", "#FF0040");
+                  socket.emit("music_value_change", {name : "drumtimbre", value : ui.value});
+                  drum_timbre_val = ui.value;
+                  $("#drumline" + drum_line_val).text(drumArray[ui.value-35]);
+
+               }
+            });
+
+            $( "#mtempo" ).slider({
+               min:50,
+               max:1000,
+               value: 250,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#tempoValue" )
+                     .val(ui.value )
+                     .css("color", "#0040FF");
+                     
+               },
+               stop: function(event, ui) {
+                $( "#tempoValue" ).css("color", "#FF0040");
+                  socket.emit("music_value_change", {name : "tempo", value : ui.value});
+                     tempo = ui.value;
+                     if(play_flg == true) {
+                      clearInterval(play_timer);
+                      play_timer = setInterval(update_tempo_effect, tempo);
+                     }
+
+               }
+            });
+            $( "#mnote" ).slider({
+               min:12,
+               max:119,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#noteValue" )
+                     .css("color", "#0040FF")
+                     .val(note_to_its_name(ui.value) + "(" + ui.value + ")");
+               },
+               stop: function(event, ui) {
+                    $( "#noteValue" ).css("color", "#FF0040");
+                   socket.emit("music_value_change", {name : "note", value : ui.value});
+
+               }
+            });
+            $( "#mreverb" ).slider({
+               min:0,
+               max:127,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#reverbValue" )
+                     .css("color", "blue")
+                     .val(ui.value );
+                     // socket.emit("music_value_change", {name : "reverb", value : ui.value});
+               },
+               stop: function(event, ui) {
+                    $( "#reverbValue" ).css("color", "red");
+                   socket.emit("music_value_change", {name : "reverb", value : ui.value});
+
+               }
+            });
+            $( "#mpanport" ).slider({
+               min:0,
+               max:127,
+               value: 60,
+               animate:"fast",
+               orientation: "horizontal",
+               slide: function( event, ui ) {
+                  $( "#panportValue" )
+                     .css("color", "#0040FF")
+                     .val(ui.value );
+                     // socket.emit("music_value_change", {name : "panport", value : ui.value});
+               },
+               stop: function(event, ui) {
+                    $( "#panportValue" ).css("color", "#FF0040");
+                   socket.emit("music_value_change", {name : "panport", value : ui.value});
+
+               }
+            });
+         });
+
+window.addEventListener('load', init, false);
+var canvas_height;
+var canvs_width;
+
+var ctx;
+var canvasX;
+var canvasY;
+var mouseIsDown = 0;
+var note_circles = []; 
+var circles_toggles = [];
+
+function Box() {
+  this.x = 0;
+  this.y = 0;
+  this.r = 0;
+  this.fill = '#444444';
+  this.left = 0;
+  this.right = 0;
+  this.top = 0;
+  this.bottom = 0;
+}
+
+function add_circle(x, y, r, fill) {
+  var cir = new Box();
+  cir.x = x;
+  cir.y = y;
+  cir.r = r;
+  cir.fill = fill;
+  cir.left = x - r;
+  cir.top = y - r;
+  cir.right = x + r;
+  cir.bottom = y + r;
+  note_circles.push(cir);
+}
+function draw_circles(context) {
+  for(cir in note_circles) {
+    context.beginPath();
+    context.arc(note_circles[cir].x, note_circles[cir].y, note_circles[cir].r, 0, Math.PI*2, true);
+    context.lineWidth = 3;
+    context.fillStyle = 'white';
+    context.fill();
+    context.strokeStyle = 'blue';
+    context.stroke();
+  }
+}
+function draw_circle_with_style(context, circle) {
+  context.beginPath();
+  context.arc(circle.x, circle.y, circle.r, 0, Math.PI*2, true);
+  context.lineWidth = 3;
+  context.fillStyle = '#0033FF';
+  context.fill();
+  context.strokeStyle = '#F3F781';
+  context.stroke();
+}
+function draw_normal_circle(context, circle) {
+  context.beginPath();
+  context.arc(circle.x, circle.y, circle.r, 0, Math.PI*2, true);
+  context.lineWidth = 3;
+  context.fillStyle = 'white';
+  context.fill();
+  context.strokeStyle = 'blue';
+  context.stroke(); 
+}
+function print_circles() {
+  for(cir in note_circles) {
+      console.log(note_circles[cir].x + ", " + note_circles[cir].y + ", " + note_circles[cir].r + 
+        ", " + note_circles[cir].left + ", " + note_circles[cir].right + ", " + note_circles[cir].top +
+        ", " + note_circles[cir].bottom + " " +  " checked.");
+  }
+}
+
+function init_led_circles() {
+  var dx, dy, dr, color;
+  color = "#444444";
+  dx = 20; 
+  dy = 25;
+  dr = 15;
+  for(var i = 0; i < 5 ; ++i) {
+    for(var j = 0 ; j < 16 ; ++j) {
+      add_circle(dx, dy, dr, color);
+      dx += 35;
+    }
+    dx = 20; 
+    dy += 38;
+  }
+  print_circles();
+  draw_circles(ctx);
+}
+function draw_drum_list_box(context) {
+  context.beginPath();
+  context.rect(-84, 12, 200, 100);
+  context.fillStyle = 'yellow';
+  context.fill();
+  context.lineWidth = 7;
+  context.strokeStyle = 'black';
+  context.stroke();
+}
+var pctx;
+// canvas init
+
+function draw_dist_line(context) {
+  for(var i = 0 ; i < 3 ; ++i) {
+    context.beginPath();
+    context.moveTo(142+i*142-i*2,0);
+    context.lineTo(142+i*142-i*2,200);
+    context.lineWidth = 3;
+    context.strokeStyle = '#ADFF2F';
+    context.stroke();
+    
+  }
+  // for(var i = 0 ; i < 4 ; ++i) {
+  //   context.moveTo(30 + i*30,0);
+  //   context.lineTo(30 + i*30,200);
+  //   context.lineWidth = 5;
+  //   context.strokeStyle = '#ff0000';
+  // }
+  //   context.stroke();
+}
+function init() {
+  canvas = document.getElementById("canvas");
+  pcanvas = document.getElementById("play_canvas");
+
+  ctx = canvas.getContext("2d");
+  pctx = pcanvas.getContext("2d");
+
+
+  $("#canvas").css({"position" : "absolute", "top" : "163px", "left" : "150px", "border" : "none"});
+  $("#play_canvas").css({"position" : "absolute", "top" : "163px", "left" : "150px", "border" : "none"});
+
+  canvas_height = canvas.height;
+  canvas_width = canvas.width;
+  canvas.canvs_width = function () { return false; }
+
+  canvas.addEventListener("mousedown",mouseDown, false);
+  // canvas.addEventListener("mousemove",mouseXY, false);
+  document.body.addEventListener("mouseup", mouseUp, false);
+
+  init_led_circles();
+  draw_dist_line(ctx);
+  // draw_drum_list_box(context);
+  for(var i = 0 ; i <note_circles.length ; ++i) {
+    circles_toggles[i] = false;
+  }
+  // $("#button_pannel").css({"position" : "absolute", "top" : "700px", "left" : canvas_width / 2 + "px"});
+  // $("#play_button").css({"position" : "relative", "top" : "10px", "right" : "200"});
+  // $("#stop_button").css({"position" : "relative", "top" : "5px", "right" : "250"});
+  // var note_indi_str = "";
+  // var space = "      ";
+  // for(var i = 0; i < 16 ; ++i) {
+  //   note_indi_str += i + space;
+  // }
+  // $("#note_num_indicator").text(note_indi_str);
+  $("#note_num_indicator").css({"font-size" : "32px", "position" : "absolute","top" : "90px", "left" : "350px"});
+  $("#led_pannel").css({"height" : "300px", "width" : "600px"});
+  $("#drum_list").css(
+    {"position" : "absolute", "height" : "300px", "width" : "103px", "top" : "160px", "left" : "3px"
+
+
+  });
+
+  var drumlist = getElementById("drum_list");
+
+}
+ 
+function mouseUp(event) {
+    mouseIsDown = 0;
+    canvasX = event.pageX - canvas.offsetLeft;
+    canvasY = event.pageY - canvas.offsetTop;
+    showPos();
+}
+ 
+var tog = 1;
+
+
+function mouseDown(event) {
+    mouseIsDown = 1;
+    document.getElementById("printtext").innerHTML = tog++;
+    canvasX = event.pageX - canvas.offsetLeft;
+    canvasY = event.pageY - canvas.offsetTop;
+    showPos();
+    for(var i = 0 ; i < note_circles.length; ++i) {
+      if(canvasX < note_circles[i].right && canvasX > note_circles[i].left &&
+         canvasY < note_circles[i].bottom && canvasY > note_circles[i].top) {
+         if(circles_toggles[i] == false) {
+          // alert("cir togs is false " + (i + 1));
+          draw_circle_with_style(ctx, note_circles[i]);
+          circles_toggles[i] = true;
+          socket.emit("music_value_change", {name : "led_on_pos", value : i});
+          drum_machine_info[i] = drum_timbre_val;
+         } else if(circles_toggles[i] == true) {
+          // alert("cir togs is true " + (i + 1));
+          draw_normal_circle(ctx, note_circles[i]);
+          circles_toggles[i] = false;
+          socket.emit("music_value_change", {name : "led_off_pos", value : i});
+          drum_machine_info[i] = 0;
+         }
+      }
+    }
+    // mouseXY();
+}
+
+ 
+function showPos() {
+  // ctx.font="12px Arial";
+  // ctx.textAlign="center";
+  // ctx.textBaseline="middle";
+  // ctx.fillStyle="black";
+  var str = canvasX + ", " + canvasY;
+  if (mouseIsDown) str = str + " down";
+  if (!mouseIsDown) str = str + " up";
+
+  document.getElementById("printtext").innerHTML = str;
+
+}
+function sync() {
+  for(var i=0; i<drum_machine_info.length; ++i) {
+    if(drum_machine_info[i] != 0) {
+      socket.emit("music_value_change", {name : "drumtimbre", value : drum_machine_info[i]});
+      socket.emit("music_value_change", {name : "led_on_pos", value : i});
+    } else {
+      socket.emit("music_value_change", {name : "led_off_pos", value : i});
+    }
+
+  }
+  socket.emit("music_value_change", {name : "sync", value : 1});
+}
+//css part
+</script>
+    <style type="text/css">
+      html,body {
+        background-color: #F6E3CE;
+  
+        margin: 0; 
+        padding: 0;
+      }
+      body {
+        margin:0;
+      }
+      canvas { 
+        border: 1px solid black; 
+      }
+      input[type="text"] {
+        font-family: Arial, san-serif;
+        background-color: #F6E3CE;
+      }
+
+      label {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        margin-right: 5px;
+        margin-left: 5px;
+      }
+      #drum_list *{
+
+        background-color:#4169E1;
+        height:38px;
+        width:136px;
+        margin: 3px;
+      
+        font-size: 15px;
+        vertical-align:middle;
+        color:#FFFF00;
+        text-align: center;
+      }
+      #drummachine {
+        position: absolute;
+        top:70px;
+        width: 710px;
+        height: 90px;
+        left:10px;
+        background-color: #006633;
+        color:white;
+        font-size:35px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      footer { 
+        display: block;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 50px;
+      }
+      footer * {
+        text-align:center;
+        background-color: #E6E6FA;
+        font-size:20px;
+      }
+      #syncbtn {
+        position:absolute;
+        top:370px;
+        left:5px;
+        width:140px;
+        height: 50px;
+        background-color: green;
+        color:white;
+        font-size: 20px;
+      }
+      #button_pannel{
+        position:absolute;
+        top:370px;
+        left:150px;
+
+      }
+      #button_pannel *{
+        width:140px;
+        height: 50px;
+        background-color: pink;
+        color:white;
+        font-size: 20px;
+      }
+    </style>
+</head>
+<body>
+
+<!-- 	<header>
+		<h1>아두이노 악기 제어</h1>
+	</header> -->
+	<!-- <div id="date"></div> -->
+<!-- 	<textarea id="text"></textarea>	 -->
+  <div id="drummachine">16step Drum sequencer<br>(Arduino based MIDI instrument)</div>
+  <div id="drum_list">
+    <div id="drumline1">1</div>
+    <div id="drumline2">2</div>
+    <div id="drumline3">3</div>
+    <div id="drumline4">4</div>
+    <div id="drumline5">5</div>
+  </div>
+  <button id="syncbtn"onclick="sync()">Sync</button>
+  <div id = "led_pannel">
+    <div id = "note_num_indicator"></div>
+    <div id = "timbre_selection_pannel"></div>
+    <canvas id="play_canvas" height="200" width="570" style="background-color:violet;z-index:3;"></canvas>
+    <canvas id="canvas" height="200" width="570" style="background-color:none;z-index: 5;">
+          lol. can't get canvas tech from your browser. plz use recent browser.
+    </canvas>
+
+    <div id = "button_pannel">
+      <button id = "play_button" height="50px" width="140px">Play</button>
+      <button id = "stop_button" height="50px" width="140px">Stop</button>
+      <button id = "note_off_button" height="50px" width="140px">Remove</button>
+
+    </div>
+
+  </div>
+  <p id ="printtext" style="float : right; top:-300px;"></p>
+  <div id="control_pannel" style="position : absolute; top: 400px; width : 700px;">
+  	<ul>
+  		<li>
+  	    <label for="volumeValue" style="font-weight:bold">Volume</label>
+  	    <input type="text" id="volumeValue"
+  	        style="border:0; color:#FF0040; font-weight:bold;">
+  			<div id="mvolume" class="mSlider"></div>
+  		</li>
+  		<li>	
+  	    <label for="tempoValue" style="font-weight:bold">Tempo</label>
+  	    <input type="text" id="tempoValue" 
+  	        style="border:0; color:#FF0040; font-weight:bold;">
+  			<div id="mtempo" class="mSlider"></div>
+  		</li>
+      <li>
+        <label for="timbreValue" style="font-weight:bold">Timbre</label>
+        <input type="text" id="timbreValue" 
+            style="border:0; color:#b9cd6d; font-weight:bold;">
+        <div id="mtimbre" class="mSlider"></div>
+      </li>
+
+      <li>
+        <label for="drumlineValue" style="font-weight:bold">Drum line</label>
+        <input type="text" id="drumlineValue" 
+            style="border:0; color:#b9cd6d; font-weight:bold;">
+        <div id="mdrumline" class="mSlider"></div>   
+      </li> 
+
+      <li>
+        <label for="drumtimbreValue" style="font-weight:bold">Drum timbre</label>
+        <input type="text" id="drumtimbreValue" 
+            style="border:0; color:#b9cd6d; font-weight:bold;">
+        <div id="mdrumtimbre" class="mSlider"></div>
+      </li>
+
+      <li>
+        <label for="noteValue"style="font-weight:bold">Note</label>
+        <input type="text" id="noteValue" 
+            style="border:0; color:#b9cd6d; font-weight:bold;">
+        <div id="mnote" class="mSlider"></div>   
+      </li> 
+      <li>
+        <label for="reverbValue"style="font-weight:bold">Reverb</label>
+        <input type="text" id="reverbValue" 
+            style="border:0; color:#b9cd6d; font-weight:bold;">
+        <div id="mreverb" class="mSlider"></div>   
+      </li> 
+  	  <li>
+  	    <label for="panportValue"style="font-weight:bold">Pan Port</label>
+  	    <input type="text" id="panportValue" 
+  	        style="border:0; color:#b9cd6d; font-weight:bold;">
+  			<div id="mpanport" class="mSlider"></div>		
+  	  </li>	
+    </ul>
+  </div>
+
+  <footer>
+    <p>
+      Department of Computer and Science Engineering of Pusan National University<br>
+      Contact information: <a href="mailto:mindplex@naver.com"> mindplex@naver.com</a>
+
+    </p>
+  </footer>
+</body>
+</html>
