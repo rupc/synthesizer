@@ -31,3 +31,10 @@
 ### 기능
 ![](사진들/슬라이드28.png)
 ![](사진들/슬라이드29.png)
+
+## 영상
+
+<iframe width="640" height="360" src="https://www.youtube.com/embed/AMejLA61EGs" frameborder="0" allowfullscreen></iframe>
+
+<iframe width="640" height="360" src="https://www.youtube.com/embed/s74J_ezt0MM" frameborder="0" allowfullscreen></iframe>
+
