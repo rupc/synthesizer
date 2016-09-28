@@ -1,5 +1,5 @@
 ## 동기
-![](pics/슬라이드3.png)
+![](pics/slide3.png)
 
 ## 시스템 구성
 ![](pics/슬라이드4.png)
