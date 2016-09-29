@@ -33,8 +33,6 @@
 ![](pics/슬라이드29.PNG)
 
 ## 영상
-
-<iframe width="640" height="360" src="https://www.youtube.com/embed/AMejLA61EGs" frameborder="0" allowfullscreen></iframe>
-
-<iframe width="640" height="360" src="https://www.youtube.com/embed/s74J_ezt0MM" frameborder="0" allowfullscreen></iframe>
+[기본 연주](https://www.youtube.com/watch?v=AMejLA61EGs)
+[웹 기반 연주](https://www.youtube.com/watch?v=s74J_ezt0MM)
 
